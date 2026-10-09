@@ -1,0 +1,23 @@
+// Only check for and apply updates once a week instead of the package
+// default of daily (these values are in days). Overrides the defaults
+// from /etc/apt/apt.conf.d/20auto-upgrades, since this file sorts after it.
+APT::Periodic::Update-Package-Lists "7";
+APT::Periodic::Unattended-Upgrade "7";
+
+// Enable unattended-upgrades for this Raspberry Pi OS device. Raspbian has
+// no separate "security" suite like Debian, so unlike a typical Debian
+// Origins-Pattern (which would only match label=Debian-Security), we match
+// both repositories actually configured on this system to get all updates,
+// not just a "security" subset that doesn't meaningfully exist here.
+Unattended-Upgrade::Origins-Pattern {
+        "origin=Raspbian,codename=${distro_codename},label=Raspbian";
+        "origin=Raspberry Pi Foundation,codename=${distro_codename},label=Raspberry Pi Foundation";
+};
+
+Unattended-Upgrade::Remove-Unused-Dependencies "true";
+
+// This is a kiosk device with no interactive user to approve a reboot, so
+// reboot automatically to actually apply kernel/firmware updates -- at
+// 04:00 to minimize disruption to daytime calendar viewing.
+Unattended-Upgrade::Automatic-Reboot "true";
+Unattended-Upgrade::Automatic-Reboot-Time "04:00";

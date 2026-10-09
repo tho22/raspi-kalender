@@ -1,0 +1,11 @@
+wayfire
+chromium-browser
+unattended-upgrades
+git
+build-essential
+pkg-config
+libcairo2-dev
+libpango1.0-dev
+libwayland-dev
+libxkbcommon-dev
+wayland-protocols

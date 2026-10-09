@@ -1,0 +1,21 @@
+IMG_NAME="kalender"
+PI_GEN_RELEASE="Kalender-Pi"
+RELEASE=bookworm
+
+LOCALE_DEFAULT=de_DE.UTF-8
+KEYBOARD_KEYMAP=de
+KEYBOARD_LAYOUT="German"
+TIMEZONE_DEFAULT="Europe/Berlin"
+
+FIRST_USER_NAME=kalender
+FIRST_USER_PASS=changeme
+DISABLE_FIRST_BOOT_USER_RENAME=1
+
+ENABLE_SSH=1
+WPA_COUNTRY=DE
+
+export KIOSK_URL="https://calendar.google.com/calendar/u/0/r"
+
+STAGE_LIST="stage0 stage1 stage2 stage-kalender"
+
+DEPLOY_COMPRESSION=none

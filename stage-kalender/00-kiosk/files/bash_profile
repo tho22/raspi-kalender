@@ -1,0 +1,10 @@
+if [[ -z $WAYLAND_DISPLAY && -z $DISPLAY && $XDG_VTNR -eq 1 ]]; then
+	sudo /usr/local/sbin/kalender-configure-display.sh || true
+	source /etc/kalender-display-env 2>/dev/null || true
+	source /etc/kalender-kiosk-env 2>/dev/null || true
+	# wlroots refuses to start at all if it finds zero input devices at
+	# startup (e.g. the touchscreen not plugged in yet); this makes it
+	# start anyway and pick up devices as they're plugged in.
+	export WLR_LIBINPUT_NO_DEVICES=1
+	wayfire
+fi
