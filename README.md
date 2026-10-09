@@ -104,6 +104,9 @@ läuft privilegiert in Docker und dauert i.d.R. 30–90+ Minuten (debootstrap,
 Paketinstallation, `wvkbd`/`kbd-toggle`-Kompilierung im chroot per QEMU,
 Image-Export).
 
+Zum Aufspielen des fertigen `.img` auf eine SD-Karte samt WLAN/SSH-Ersteinrichtung
+über den Raspberry Pi Imager siehe [INSTALL.md](INSTALL.md).
+
 ## Vor dem Build unbedingt anpassen
 
 - **`FIRST_USER_PASS` in `config`** – steht aktuell auf dem Platzhalter
