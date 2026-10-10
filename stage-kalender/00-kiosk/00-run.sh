@@ -15,6 +15,21 @@ cat > "${ROOTFS_DIR}/etc/systemd/system/getty@tty1.service.d/autologin.conf" <<E
 ExecStart=
 ExecStart=-/usr/local/sbin/kalender-autologin-getty %I \$TERM
 EOF
+
+# Marker file for raspi-config's own autologin bookkeeping: when the
+# Raspberry Pi Imager renames the default user via custom.toml, userconf-pi
+# calls raspi-config's "cancel-rename", which runs `raspi-config nonint
+# do_boot_behaviour B1` (console, NO autologin) unless this file exists --
+# and B1/B3 *delete* /etc/systemd/system/getty@tty1.service.d/autologin.conf
+# outright, rather than leaving it alone. Without this marker, renaming the
+# user via the Imager silently kills autologin entirely (confirmed live: the
+# kalender-autologin-getty wrapper above handles a *stale* username fine,
+# but not a *deleted* autologin.conf). With the marker present,
+# cancel-rename instead runs B2, which regenerates autologin.conf itself --
+# using the already-renamed, correct username directly.
+install -v -d "${ROOTFS_DIR}/var/lib/userconf-pi"
+: > "${ROOTFS_DIR}/var/lib/userconf-pi/autologin"
+
 cat > "${ROOTFS_DIR}/etc/systemd/system/getty@tty1.service.d/noclear.conf" <<EOF
 [Service]
 TTYVTDisallocate=no
