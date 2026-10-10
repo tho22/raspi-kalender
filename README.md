@@ -1,4 +1,4 @@
-# kalender-claude
+# raspi-kalender
 
 Ein Raspberry Pi OS Lite (Bookworm), das nach dem Boot automatisch einen
 Chromium-Kiosk mit einem freigegebenen Google-Kalender zeigt – inklusive
@@ -121,7 +121,7 @@ bei bereits angeschlossenem Kabel behebt das zuverlässig.
 
 ```
 git clone --recurse-submodules <repo-url>
-cd kalender-claude
+cd raspi-kalender
 ./setup.sh
 cd pi-gen
 ./build-docker.sh
