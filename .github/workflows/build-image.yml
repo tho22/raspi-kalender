@@ -61,6 +61,25 @@ jobs:
           restore-keys: |
             pigen-work-
 
+      # actions/cache's save step (see below) runs unprivileged and can only
+      # read root-owned files by first chowning them to the runner's own
+      # user -- which means they're saved into the cache tar owned by that
+      # user, not root. Its restore step is equally unprivileged, so it
+      # extracts them back AS that same user (unprivileged tar can't chown
+      # to an owner other than itself). Left alone, that silently turns
+      # almost the entire cached rootfs tree (stage0-stage2) into
+      # runner-uid-owned files instead of root-owned ones on every cache
+      # hit -- pi-gen's prerun.sh skip logic then reuses that rootfs as-is
+      # without rebuilding it, so the wrong ownership rides all the way
+      # into the final exported image (confirmed live: /etc, /usr, /home
+      # etc. on a built image all ended up owned by uid 1001, the
+      # ubuntu-latest runner's own uid, breaking login entirely). Restore
+      # real root ownership before the build touches this tree again.
+      - name: Fix work cache ownership after restore
+        run: |
+          mkdir -p pi-gen-work-cache
+          sudo chown -R 0:0 pi-gen-work-cache
+
       - name: Build image
         env:
           PIGEN_DOCKER_OPTS: "--mount type=bind,source=${{ github.workspace }}/pi-gen-work-cache,target=/pi-gen/work"
