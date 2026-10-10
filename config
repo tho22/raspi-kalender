@@ -14,16 +14,21 @@ DISABLE_FIRST_BOOT_USER_RENAME=1
 ENABLE_SSH=1
 WPA_COUNTRY=DE
 
-# pi-gen defaults this to 1 (stage2/04-cloud-init, trixie only). Keep it off:
-# the Raspberry Pi Imager detects the cloud-init placeholder files this stage
-# installs and silently switches its "OS customisation" to cloud-init's
-# user-data/network-config format instead of custom.toml -- which conflicts
-# with this image's NetworkManager-based networking (cloud-init's netplan
-# defaults to the networkd renderer) and with FIRST_USER_NAME/autologin (it
-# creates its own separate user rather than renaming the built-in one).
-# Confirmed live on hardware: this caused unreliable WiFi and a broken home
-# directory (wrong UID) after using the Imager's username/WLAN fields.
-ENABLE_CLOUD_INIT=0
+# Left at pi-gen's default (1, i.e. cloud-init stays enabled on trixie): the
+# Raspberry Pi Imager uses cloud-init's user-data/network-config format
+# unconditionally for "OS customisation" on trixie-based images, regardless
+# of what's on our own image, so disabling cloud-init here doesn't avoid
+# that format -- it just means nothing ever processes the files the Imager
+# writes, silently making username/password/WLAN customisation inert. An
+# earlier version of this config disabled cloud-init after live hardware
+# testing showed unreliable WiFi and a broken home directory (wrong UID)
+# following Imager customisation -- but that testing ran through a CI cache
+# bug (see git history / GitHub Actions workflow) that independently
+# corrupted file ownership across the whole image, which is a much better
+# fit for those exact symptoms. Left enabled to test that theory and to
+# match official Raspberry Pi OS images, which ship cloud-init and
+# NetworkManager together without this conflict.
+# ENABLE_CLOUD_INIT=0
 
 export KIOSK_URL="https://calendar.google.com/calendar/u/0/r"
 

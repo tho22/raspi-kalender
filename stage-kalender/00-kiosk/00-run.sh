@@ -161,25 +161,6 @@ on_chroot << 'EOF'
 apt-get purge -y --auto-remove git build-essential pkg-config wayland-protocols
 EOF
 
-# ENABLE_CLOUD_INIT=0 in config only stops pi-gen's stage2/04-cloud-init
-# 01-run.sh from writing the NoCloud seed files (user-data/network-config/
-# meta-data) to /boot/firmware -- that stage's 00-packages file still gets
-# installed unconditionally by pi-gen's generic stage runner before 01-run.sh
-# ever checks the variable, so cloud-init ends up installed and its systemd
-# units enabled regardless. Confirmed live: cloud-init was still active on
-# boot even with ENABLE_CLOUD_INIT=0. Purge it outright instead of relying on
-# that half-measure. Queried with dpkg-query first since this package only
-# exists on trixie-based pi-gen tags (stage2/04-cloud-init doesn't exist on
-# bookworm).
-on_chroot << 'EOF'
-set -e
-CLOUD_INIT_PACKAGES="cloud-init rpi-cloud-init-mods"
-INSTALLED_CLOUD_INIT="$(dpkg-query -W -f='${Package}\n' $CLOUD_INIT_PACKAGES 2>/dev/null || true)"
-if [ -n "$INSTALLED_CLOUD_INIT" ]; then
-	apt-get purge -y --auto-remove $INSTALLED_CLOUD_INIT
-fi
-EOF
-
 # Drop stock raspios-lite packages that are irrelevant to a HDMI+touch+WLAN
 # kiosk: GPIO/camera/sensor tooling (robotics use cases), physical-media and
 # modem/MTP support, Raspberry Pi's own physical-keyboard firmware tooling
