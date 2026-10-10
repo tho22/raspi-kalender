@@ -1,10 +1,20 @@
 # kalender-claude
 
-Ein mit [pi-gen](https://github.com/RPi-Distro/pi-gen) gebautes Raspberry Pi
-OS Lite (Bookworm), das nach dem Boot automatisch einen Chromium-Kiosk mit
-einem freigegebenen Google-Kalender zeigt – inklusive Bildschirmtastatur für
-den einmaligen Google-Login per Touch, und so gebaut, dass dieselbe SD-Karte
-unverändert auf einem Pi Zero 2 W, Pi 4 oder Pi 5 bootet.
+Ein Raspberry Pi OS Lite (Bookworm), das nach dem Boot automatisch einen
+Chromium-Kiosk mit einem freigegebenen Google-Kalender zeigt – inklusive
+Bildschirmtastatur für den einmaligen Google-Login per Touch, und so gebaut,
+dass dieselbe SD-Karte unverändert auf einem Pi Zero 2 W, Pi 4 oder Pi 5
+bootet.
+
+## Basiert auf pi-gen
+
+Das Image wird mit **[pi-gen](https://github.com/RPi-Distro/pi-gen)** gebaut
+– dem offiziellen Raspberry-Pi-Tool, mit dem auch die Standard-Raspberry-Pi-OS-
+Images entstehen. Dieses Repo bringt nur eine zusätzliche, eigene Stage
+(`stage-kalender/`) sowie eine Build-Konfiguration (`config`) mit; pi-gen
+selbst liegt unverändert als Git-Submodule vor (gepinnt auf einen bestimmten
+Tag, **kein Fork**) – siehe [Repo-Struktur](#repo-struktur) weiter unten für
+Details.
 
 ## Architektur
 
