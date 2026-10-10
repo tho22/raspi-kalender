@@ -152,3 +152,22 @@ rm -rf "${ROOTFS_DIR}/usr/src/wvkbd" "${ROOTFS_DIR}/usr/src/kbd-toggle.c"
 on_chroot << 'EOF'
 apt-get purge -y --auto-remove git build-essential pkg-config wayland-protocols
 EOF
+
+# Drop stock raspios-lite packages that are irrelevant to a HDMI+touch+WLAN
+# kiosk: GPIO/camera/sensor tooling (robotics use cases), physical-media and
+# modem/MTP support, Raspberry Pi's own physical-keyboard firmware tooling
+# (we built our own on-screen keyboard instead), rpi-update (bypasses apt to
+# pull untested firmware -- a liability more than a convenience on a
+# deployed device), and rpi-connect-lite (Raspberry Pi's own cloud-based
+# remote-access/screen-sharing agent -- an unnecessary external-service
+# dependency for a device we already reach over plain SSH). Bluetooth is
+# kept. Queried with dpkg-query first since not every package here exists on
+# every pi-gen release/tag this image might be built against.
+on_chroot << 'EOF'
+set -e
+UNUSED_PACKAGES="rpi-connect-lite v4l-utils gpiod python3-libgpiod python3-gpiozero python3-rpi-lgpio python3-spidev python3-smbus2 rpicam-apps-lite rpi-keyboard-config rpi-keyboard-fw-update mkvtoolnix cifs-utils ntfs-3g libmtp-runtime usb-modeswitch rpi-update"
+INSTALLED_UNUSED="$(dpkg-query -W -f='${Package}\n' $UNUSED_PACKAGES 2>/dev/null || true)"
+if [ -n "$INSTALLED_UNUSED" ]; then
+	apt-get purge -y --auto-remove $INSTALLED_UNUSED
+fi
+EOF
