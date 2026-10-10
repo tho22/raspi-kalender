@@ -1,5 +1,5 @@
 # Scratch/working files, not project source
 /scratch/
 
-# Claude Code local session state (if ever populated)
-.claude/settings.local.json
+# Claude Code local session state
+.claude/
