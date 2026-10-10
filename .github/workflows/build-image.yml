@@ -1,0 +1,72 @@
+name: Build kiosk image
+
+# Manual trigger only (no push/PR trigger): this build takes 45-90+ minutes
+# under QEMU emulation and isn't meant to run on every commit.
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag for the built image (default: build-<date>-<run number>)"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # Generous ceiling, not an expected duration: fail fast instead of
+    # hanging silently (a broken apt mirror once hung a local build here
+    # for ~70 hours before anyone noticed).
+    timeout-minutes: 180
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          docker image prune -af
+
+      - name: Install QEMU user-mode emulation (for the armhf build)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-static binfmt-support
+
+      - name: Set up pi-gen (apply patch, copy stage-kalender/config)
+        run: ./setup.sh
+
+      - name: Build image
+        run: |
+          cd pi-gen
+          ./build-docker.sh
+
+      - name: Compress image
+        id: compress
+        run: |
+          cd pi-gen/deploy
+          img="$(ls -- *.img)"
+          xz -T0 -6 -k "$img"
+          echo "xz_path=pi-gen/deploy/${img}.xz" >> "$GITHUB_OUTPUT"
+
+      - name: Determine release tag
+        id: tag
+        run: |
+          tag="${{ github.event.inputs.release_tag }}"
+          if [ -z "$tag" ]; then
+            tag="build-$(date +%Y-%m-%d)-${{ github.run_number }}"
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ steps.tag.outputs.tag }}" \
+            "${{ steps.compress.outputs.xz_path }}" \
+            --title "Kalender-Pi image ${{ steps.tag.outputs.tag }}" \
+            --notes "Automated build via GitHub Actions (manual trigger). Decompress with: xz -d *.img.xz"

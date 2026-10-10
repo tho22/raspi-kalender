@@ -63,10 +63,11 @@ gelöst werden konnte. Der aktuelle Stack:
   `stage2`). Wird von `setup.sh` auf den Submodule-Checkout angewendet,
   niemals direkt committet.
 - `config` – Build-Konfiguration (Locale, Zeitzone, Tastatur, Nutzer,
-  `KIOSK_URL`, Stage-Liste); wird von `setup.sh` als `pi-gen/config`
-  verlinkt
+  `KIOSK_URL`, Stage-Liste); wird von `setup.sh` nach `pi-gen/config`
+  kopiert (nicht verlinkt: `pi-gen/` ist der Docker-Build-Kontext, ein nach
+  außen zeigender Symlink würde im Container ins Leere laufen)
 - `stage-kalender/` – eigene Stage, die nach `stage2` (fertiges Lite-Image)
-  angehängt wird; wird von `setup.sh` als `pi-gen/stage-kalender` verlinkt:
+  angehängt wird; wird von `setup.sh` nach `pi-gen/stage-kalender` kopiert:
   - `00-kiosk/00-packages-nr` – `wayfire`, `chromium-browser`, plus Build-Deps
     für `wvkbd`/`kbd-toggle` (`--no-install-recommends`)
   - `00-kiosk/00-run.sh` – Autologin-Drop-ins, `.bash_profile`, Wayfire-Config,
@@ -95,9 +96,10 @@ cd pi-gen
 ```
 
 `setup.sh` holt den pi-gen-Submodule (falls noch nicht geschehen), wendet
-`patches/pi-gen-fixes.patch` darauf an und verlinkt `config` sowie
+`patches/pi-gen-fixes.patch` darauf an und kopiert `config` sowie
 `stage-kalender` hinein. Nach jedem `git submodule update` (z.B. nach einem
-Pull, der den gepinnten Commit ändert) muss `setup.sh` erneut laufen.
+Pull, der den gepinnten Commit ändert) **und nach jeder Änderung an
+`stage-kalender/` oder `config`** muss `setup.sh` erneut laufen.
 
 Ergebnis landet in `pi-gen/deploy/` (ein `.img`, keine zwei mehr). Der Build
 läuft privilegiert in Docker und dauert i.d.R. 30–90+ Minuten (debootstrap,
@@ -106,6 +108,15 @@ Image-Export).
 
 Zum Aufspielen des fertigen `.img` auf eine SD-Karte samt WLAN/SSH-Ersteinrichtung
 über den Raspberry Pi Imager siehe [INSTALL.md](INSTALL.md).
+
+### Build via GitHub Actions
+
+Alternativ lässt sich das Image auch ohne lokalen Docker/QEMU-Aufbau bauen:
+Workflow [`.github/workflows/build-image.yml`](.github/workflows/build-image.yml)
+im Actions-Tab manuell starten ("Run workflow" – kein automatischer Trigger
+bei Push, da ein Durchlauf 45–90+ Minuten dauert). Das Ergebnis landet
+`xz`-komprimiert (≈720 MB statt 3,6 GB roh) als Asset an einem neuen
+GitHub-Release.
 
 ## Vor dem Build unbedingt anpassen
 
