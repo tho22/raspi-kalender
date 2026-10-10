@@ -59,9 +59,17 @@ EOF
 # kiosk has no interactive user to approve one.
 install -v -m 644 files/51kalender-unattended-upgrades "${ROOTFS_DIR}/etc/apt/apt.conf.d/51kalender-unattended-upgrades"
 
+# Re-assert ownership of the whole home directory, not just the files we
+# just installed into it: stage1/01-sys-tweaks's adduser call is guarded by
+# `if ! id -u ${FIRST_USER_NAME}`, so on a cached CI build (where the user
+# already exists in the restored work-directory cache) adduser -- and the
+# correct ownership it would set up -- never runs again. Confirmed live:
+# a build where the CI cache round-trip had reset the home directory's
+# owner left /home/kalender owned by root, breaking login entirely
+# ("change directory failed: Permission denied"). This runs unconditionally
+# on every build regardless of caching, so it self-heals that every time.
 on_chroot << EOF
-chown ${FIRST_USER_NAME}:${FIRST_USER_NAME} /home/${FIRST_USER_NAME}/.bash_profile
-chown -R ${FIRST_USER_NAME}:${FIRST_USER_NAME} /home/${FIRST_USER_NAME}/.config
+chown -R ${FIRST_USER_NAME}:${FIRST_USER_NAME} /home/${FIRST_USER_NAME}
 EOF
 
 # This image is meant to boot unmodified on a Pi Zero 2 W, a Pi 4 or a Pi 5,
