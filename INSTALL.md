@@ -10,8 +10,9 @@ manuelle Einrichtung am Gerät selbst.
 - Ein Rechner mit installiertem **Raspberry Pi Imager** (offizielle Software
   von Raspberry Pi) und einem SD-Kartenleser
 - Eine SD-Karte (mind. 8 GB)
-- Die Image-Datei des Kalender-Builds aus `pi-gen/deploy/` (z. B.
-  `2026-10-08-kalender.img`)
+- Die Image-Datei des Kalender-Builds: entweder aus `pi-gen/deploy/` (z. B.
+  `2026-10-08-kalender.img`) oder das `.img.xz` von einem
+  [GitHub-Actions-Release](https://github.com/tho22/raspi-kalender/releases)
 - SSID und Passwort des WLANs, mit dem sich der Pi verbinden soll
 - Optional: der eigene SSH-Public-Key, für späteren SSH-Zugriff auf das Gerät
 
@@ -19,9 +20,13 @@ manuelle Einrichtung am Gerät selbst.
 
 Raspberry Pi Imager starten und unter **„Operating System"** ganz unten
 **„Use custom"** (bzw. „Eigenes Image verwenden") auswählen. Dort die
-`.img`-Datei des Kalender-Builds auswählen — **nicht** ein offizielles
+Image-Datei des Kalender-Builds auswählen — **nicht** ein offizielles
 Raspberry Pi OS Image, da dieses Image bereits den fertigen Kiosk-Aufbau
 enthält.
+
+> Kommt die Datei als `.img.xz` von einem GitHub-Actions-Release: nicht
+> vorher entpacken, der Imager liest komprimierte Images (`.xz`, `.zip`,
+> …) direkt.
 
 ## 2. Speicherziel (SD-Karte) wählen
 
