@@ -130,6 +130,13 @@ jobs:
           mv "${img}.xz" "$renamed"
           echo "xz_path=pi-gen/deploy/${renamed}" >> "$GITHUB_OUTPUT"
 
+      # --target pins the new tag to the commit that was actually built,
+      # instead of gh release create's default of the repo's default branch
+      # HEAD -- without it, every release's underlying tag silently pointed
+      # at whatever master happened to be, so every release ended up with
+      # the exact same tag/commit creation date regardless of when it was
+      # actually built (confirmed live: every release reported the same
+      # created_at, from an unrelated master commit).
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -137,16 +144,25 @@ jobs:
           gh release create "${{ steps.tag.outputs.tag }}" \
             "${{ steps.compress.outputs.xz_path }}" \
             --title "Kalender-Pi image ${{ steps.tag.outputs.tag }}" \
-            --notes "Automated build via GitHub Actions (manual trigger). Decompress with: xz -d *.img.xz"
+            --notes "Automated build via GitHub Actions (manual trigger). Decompress with: xz -d *.img.xz" \
+            --target "${{ github.sha }}"
 
+      # Sort by publishedAt, not createdAt: createdAt reflects the
+      # underlying tag/commit's own creation time, which -- before the
+      # --target fix above -- was identical across every release, making
+      # this sort order arbitrary. Confirmed live: with every createdAt
+      # tied, sort_by's stable ordering combined with reverse ended up
+      # keeping the OLDEST releases and deleting the one just published.
+      # publishedAt is the release object's own timestamp and always
+      # reflects actual publish order regardless of commit history.
       - name: Delete old releases
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           keep="${{ github.event.inputs.keep_releases }}"
           keep="${keep:-3}"
-          gh release list --limit 100 --json tagName,createdAt \
-            --jq "sort_by(.createdAt) | reverse | .[${keep}:] | .[].tagName" \
+          gh release list --limit 100 --json tagName,publishedAt \
+            --jq "sort_by(.publishedAt) | reverse | .[${keep}:] | .[].tagName" \
             | while read -r old_tag; do
                 echo "Deleting old release: ${old_tag}"
                 gh release delete "${old_tag}" --yes --cleanup-tag
