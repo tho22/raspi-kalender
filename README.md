@@ -121,6 +121,15 @@ GitHub-Release. Nach jedem erfolgreichen Lauf werden automatisch nur die
 ältere werden samt Tag gelöscht – Releases verfallen sonst nicht von
 selbst und würden sich sonst unbegrenzt ansammeln.
 
+pi-gens Arbeitsverzeichnis (stage0–stage2/stage-kalender-Rootfs) wird über
+`actions/cache` zwischen Läufen wiederverwendet (via `PIGEN_DOCKER_OPTS`
+auf ein Cache-Verzeichnis statt eines anonymen Docker-Volumes gemountet),
+analog zum lokalen `CONTINUE=1`. Dadurch entfällt bei unveränderten frühen
+Stages das erneute `debootstrap` und Herunterladen der Basispakete – nur
+tatsächlich geänderte Stages laufen neu (pi-gens eigene Erkennung
+entscheidet das, nicht der Cache selbst). `export-image` wird nie
+gecacht, da es ohnehin bei jedem Lauf frisch entsteht.
+
 ## Vor dem Build unbedingt anpassen
 
 - **`FIRST_USER_PASS` in `config`** – steht aktuell auf dem Platzhalter

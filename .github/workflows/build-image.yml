@@ -45,10 +45,40 @@ jobs:
       - name: Set up pi-gen (apply patch, copy stage-kalender/config)
         run: ./setup.sh
 
+      # pi-gen's own "work" directory holds each stage's rootfs. Normally
+      # this lives in an anonymous Docker volume (gone once the job's VM is
+      # torn down), so every run would re-debootstrap and re-install every
+      # package from stage0-stage2 from scratch (~10-40 of the ~45-90 min
+      # total). Bind-mounting it to a path on the runner instead lets us
+      # cache it across runs: pi-gen's own prerun.sh already skips
+      # debootstrap/re-copying a stage if its rootfs dir already exists, so
+      # a cache hit mostly just re-verifies already-installed packages.
+      - name: Restore pi-gen work cache
+        uses: actions/cache@v4
+        with:
+          path: pi-gen-work-cache
+          key: pigen-work-${{ github.run_id }}
+          restore-keys: |
+            pigen-work-
+
       - name: Build image
+        env:
+          PIGEN_DOCKER_OPTS: "--mount type=bind,source=${{ github.workspace }}/pi-gen-work-cache,target=/pi-gen/work"
         run: |
+          mkdir -p pi-gen-work-cache
           cd pi-gen
           ./build-docker.sh
+
+      # export-image is fully regenerated every run (it's what we're
+      # actually building), so caching it buys nothing and would just waste
+      # cache storage. The build container runs as root, so its files are
+      # root-owned on the runner too; actions/cache's implicit save at the
+      # end of the job needs to read them, hence the chown.
+      - name: Trim and prepare work cache for saving
+        if: always()
+        run: |
+          sudo rm -rf pi-gen-work-cache/*/export-image pi-gen-work-cache/build.log
+          sudo chown -R "$(id -u):$(id -g)" pi-gen-work-cache
 
       - name: Compress image
         id: compress
