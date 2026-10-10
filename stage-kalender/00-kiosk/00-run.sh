@@ -3,12 +3,17 @@
 KIOSK_URL="${KIOSK_URL:-https://calendar.google.com/calendar/u/0/r}"
 
 # Console autologin for the kiosk user (equivalent to raspi-config's
-# "Console Autologin" boot option, but pinned to FIRST_USER_NAME).
+# "Console Autologin" boot option). Goes through a wrapper script that
+# resolves the actual uid-1000 username at getty start time instead of
+# hardcoding FIRST_USER_NAME, so autologin survives a username change made
+# later via the Raspberry Pi Imager's "OS customisation" settings.
+install -v -m 755 files/kalender-autologin-getty "${ROOTFS_DIR}/usr/local/sbin/kalender-autologin-getty"
+
 install -v -d "${ROOTFS_DIR}/etc/systemd/system/getty@tty1.service.d"
 cat > "${ROOTFS_DIR}/etc/systemd/system/getty@tty1.service.d/autologin.conf" <<EOF
 [Service]
 ExecStart=
-ExecStart=-/sbin/agetty --autologin ${FIRST_USER_NAME} --noclear %I \$TERM
+ExecStart=-/usr/local/sbin/kalender-autologin-getty %I \$TERM
 EOF
 cat > "${ROOTFS_DIR}/etc/systemd/system/getty@tty1.service.d/noclear.conf" <<EOF
 [Service]
@@ -84,8 +89,10 @@ install -v -d "${ROOTFS_DIR}/etc/sudoers.d"
 cat > "${ROOTFS_DIR}/etc/sudoers.d/kalender-display" <<EOF
 # Allow the kiosk user to run the boot-time hardware display detection
 # script (and only that script) as root without a password, so it can run
-# non-interactively from .bash_profile before wayfire starts.
-${FIRST_USER_NAME} ALL=(root) NOPASSWD: /usr/local/sbin/kalender-configure-display.sh
+# non-interactively from .bash_profile before wayfire starts. Matched by
+# uid (#1000), not by name, so this keeps working if the account gets
+# renamed later via the Raspberry Pi Imager's "OS customisation" settings.
+#1000 ALL=(root) NOPASSWD: /usr/local/sbin/kalender-configure-display.sh
 EOF
 chmod 440 "${ROOTFS_DIR}/etc/sudoers.d/kalender-display"
 

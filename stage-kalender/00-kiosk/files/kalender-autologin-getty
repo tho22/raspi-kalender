@@ -1,0 +1,8 @@
+#!/bin/bash
+# Resolves the first user (uid 1000) dynamically rather than hardcoding a
+# username: this keeps autologin working if the account is renamed after
+# the image was built, e.g. via the Raspberry Pi Imager's "OS customisation"
+# username field (applied through custom.toml at first boot -- see
+# INSTALL.md), which userconf-pi performs independently of this image.
+USER="$(getent passwd 1000 | cut -d: -f1)"
+exec /sbin/agetty --autologin "${USER:-kalender}" --noclear "$@"

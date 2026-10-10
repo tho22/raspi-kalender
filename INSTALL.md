@@ -38,7 +38,16 @@ Zahnrad-Symbol unten rechts — oder mit <kbd>Strg</kbd>+<kbd>Umschalt</kbd>+<kb
 — die erweiterten Einstellungen öffnen. Dort werden WLAN und SSH
 eingerichtet, **bevor** die Karte beschrieben wird.
 
-## 4. WLAN konfigurieren
+## 4. Benutzername und Passwort ändern (optional)
+
+Im Reiter **„General"** unter „Set username and password" lassen sich
+Login-Name und Passwort des Standardnutzers (im Image: `kalender` /
+`changeme`) direkt beim Flashen ändern — ein eigener Image-Build ist dafür
+nicht nötig. Autologin und die Kiosk-Rechte sind so eingerichtet, dass sie
+den tatsächlichen Nutzer zur Boot-Zeit ermitteln, nicht den Namen `kalender`
+fest annehmen.
+
+## 5. WLAN konfigurieren
 
 Im Reiter **„General"** (bzw. Allgemein) den Haken bei „Configure wireless
 LAN" setzen und ausfüllen:
@@ -49,7 +58,7 @@ LAN" setzen und ausfüllen:
 | Password               | WLAN-Passwort     |
 | Wireless LAN country   | `DE`              |
 
-## 5. SSH aktivieren (optional, aber empfohlen)
+## 6. SSH aktivieren (optional, aber empfohlen)
 
 Im Reiter **„Services"** SSH aktivieren:
 
@@ -61,7 +70,7 @@ Passwort-Login für SSH bewusst deaktiviert lassen, solange am Gerät noch das
 Standardpasswort des Benutzers `kalender` gesetzt ist (siehe
 Sicherheitshinweis in [README.md](README.md)).
 
-## 6. Gebietsschema prüfen
+## 7. Gebietsschema prüfen
 
 Im Reiter **„General"** unter „Set locale settings":
 
@@ -71,13 +80,13 @@ Im Reiter **„General"** unter „Set locale settings":
 Diese Werte stecken zwar schon im Image selbst (siehe `config`), eine
 Übereinstimmung schadet aber nicht.
 
-## 7. Speichern, schreiben, bestätigen
+## 8. Speichern, schreiben, bestätigen
 
 Einstellungen mit „Save" übernehmen, dann den Schreibvorgang starten und die
 Sicherheitsabfrage (Karteninhalt wird gelöscht) bestätigen. Je nach
 Kartengeschwindigkeit dauert das Schreiben einige Minuten.
 
-## 8. Karte einsetzen und ersten Boot abwarten
+## 9. Karte einsetzen und ersten Boot abwarten
 
 Karte in den Raspberry Pi stecken und Strom anschließen. Der erste Start
 dauert länger als gewohnt: Im Hintergrund werden WLAN, SSH-Schlüssel und
