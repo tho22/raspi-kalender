@@ -127,8 +127,8 @@ und dauert i.d.R. 30–90+ Minuten (debootstrap, Paketinstallation,
 `wvkbd`/`kbd-toggle`-Kompilierung im chroot per QEMU, Image-Export).
 
 Zum Aufspielen des fertigen `.img` auf eine SD-Karte samt WLAN/SSH/
-Benutzername-Einrichtung über den Raspberry Pi Imager siehe
-[INSTALL.md](INSTALL.md).
+Benutzername-Einrichtung über den [Raspberry Pi Imager](https://www.raspberrypi.com/software/)
+siehe [INSTALL.md](INSTALL.md).
 
 ### Build via GitHub Actions
 

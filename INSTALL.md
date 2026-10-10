@@ -7,8 +7,8 @@ manuelle Einrichtung am Gerät selbst.
 
 ## Voraussetzungen
 
-- Ein Rechner mit installiertem **Raspberry Pi Imager** (offizielle Software
-  von Raspberry Pi) und einem SD-Kartenleser
+- Ein Rechner mit installiertem **[Raspberry Pi Imager](https://www.raspberrypi.com/software/)**
+  (offizielle Software von Raspberry Pi) und einem SD-Kartenleser
 - Eine SD-Karte (mind. 8 GB)
 - Die Image-Datei des Kalender-Builds: entweder aus `pi-gen/deploy/` (z. B.
   `2026-10-08-kalender.img`) oder das `.img.xz` von einem
