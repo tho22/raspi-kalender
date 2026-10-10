@@ -1,6 +1,6 @@
 IMG_NAME="kalender"
 PI_GEN_RELEASE="Kalender-Pi"
-RELEASE=bookworm
+RELEASE=trixie
 
 LOCALE_DEFAULT=de_DE.UTF-8
 KEYBOARD_KEYMAP=de
