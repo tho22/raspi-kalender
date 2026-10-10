@@ -610,6 +610,17 @@ layer_surface_configure(void *data, struct zwlr_layer_surface_v1 *surface,
         scale = keyboard.preferred_fractional_scale;
     }
 
+    // Some compositors (confirmed: wayfire on a Raspberry Pi 5 / trixie
+    // build) send a degenerate first configure with w=0 and h=0 before the
+    // real layout is known, rather than only ever sending usable
+    // dimensions. Resizing to 0x0 segfaults downstream in the drawing
+    // code. The layer-shell protocol requires acking every configure, but
+    // not acting on one with a bogus size -- just wait for the next one.
+    if (w == 0 && h == 0) {
+        zwlr_layer_surface_v1_ack_configure(surface, serial);
+        return;
+    }
+
     if (keyboard.w != w || keyboard.h != h || keyboard.scale != scale ||
         keyboard.output != current_output || hidden) {
 
