@@ -9,6 +9,11 @@ on:
         description: "Release tag for the built image (default: build-<date>-<run number>)"
         required: false
         type: string
+      keep_releases:
+        description: "Number of most-recent releases to keep (older ones are deleted after a successful build)"
+        required: false
+        type: number
+        default: 3
 
 permissions:
   contents: write
@@ -70,3 +75,16 @@ jobs:
             "${{ steps.compress.outputs.xz_path }}" \
             --title "Kalender-Pi image ${{ steps.tag.outputs.tag }}" \
             --notes "Automated build via GitHub Actions (manual trigger). Decompress with: xz -d *.img.xz"
+
+      - name: Delete old releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          keep="${{ github.event.inputs.keep_releases }}"
+          keep="${keep:-3}"
+          gh release list --limit 100 --json tagName,createdAt \
+            --jq "sort_by(.createdAt) | reverse | .[${keep}:] | .[].tagName" \
+            | while read -r old_tag; do
+                echo "Deleting old release: ${old_tag}"
+                gh release delete "${old_tag}" --yes --cleanup-tag
+              done

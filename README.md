@@ -116,7 +116,10 @@ Workflow [`.github/workflows/build-image.yml`](.github/workflows/build-image.yml
 im Actions-Tab manuell starten ("Run workflow" – kein automatischer Trigger
 bei Push, da ein Durchlauf 45–90+ Minuten dauert). Das Ergebnis landet
 `xz`-komprimiert (≈720 MB statt 3,6 GB roh) als Asset an einem neuen
-GitHub-Release.
+GitHub-Release. Nach jedem erfolgreichen Lauf werden automatisch nur die
+`keep_releases` (Workflow-Eingabe, Default 3) neuesten Releases behalten,
+ältere werden samt Tag gelöscht – Releases verfallen sonst nicht von
+selbst und würden sich sonst unbegrenzt ansammeln.
 
 ## Vor dem Build unbedingt anpassen
 
