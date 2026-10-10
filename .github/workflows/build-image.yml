@@ -86,14 +86,6 @@ jobs:
           sudo find pi-gen-work-cache -depth \( -type c -o -type b \) -delete
           sudo chown -R "$(id -u):$(id -g)" pi-gen-work-cache
 
-      - name: Compress image
-        id: compress
-        run: |
-          cd pi-gen/deploy
-          img="$(ls -- *.img)"
-          xz -T0 -6 -k "$img"
-          echo "xz_path=pi-gen/deploy/${img}.xz" >> "$GITHUB_OUTPUT"
-
       - name: Determine release tag
         id: tag
         run: |
@@ -102,6 +94,22 @@ jobs:
             tag="build-$(date +%Y-%m-%d)-${{ github.run_number }}"
           fi
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      # pi-gen names the raw image after the build date alone (e.g.
+      # "2026-10-10-kalender.img"), so multiple runs on the same day would
+      # otherwise all produce an identically-named download -- include the
+      # release tag (which is already unique per run) in the asset's own
+      # filename too, not just in the release metadata, so downloaded files
+      # stay distinguishable on disk.
+      - name: Compress image
+        id: compress
+        run: |
+          cd pi-gen/deploy
+          img="$(ls -- *.img)"
+          xz -T0 -6 -k "$img"
+          renamed="kalender-${{ steps.tag.outputs.tag }}.img.xz"
+          mv "${img}.xz" "$renamed"
+          echo "xz_path=pi-gen/deploy/${renamed}" >> "$GITHUB_OUTPUT"
 
       - name: Publish GitHub Release
         env:
