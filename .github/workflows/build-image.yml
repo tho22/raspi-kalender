@@ -73,11 +73,17 @@ jobs:
       # actually building), so caching it buys nothing and would just waste
       # cache storage. The build container runs as root, so its files are
       # root-owned on the runner too; actions/cache's implicit save at the
-      # end of the job needs to read them, hence the chown.
+      # end of the job needs to read them, hence the chown. Device nodes
+      # (rootfs/dev/null etc., created by debootstrap) can't be restored by
+      # actions/cache's unprivileged tar (mknod needs root) and make the
+      # whole restore fail; they're also never actually needed from the
+      # cache since pi-gen's on_chroot always bind-mounts the real /dev over
+      # a stage's rootfs/dev before using it -- so just drop them.
       - name: Trim and prepare work cache for saving
         if: always()
         run: |
           sudo rm -rf pi-gen-work-cache/*/export-image pi-gen-work-cache/build.log
+          sudo find pi-gen-work-cache -depth \( -type c -o -type b \) -delete
           sudo chown -R "$(id -u):$(id -g)" pi-gen-work-cache
 
       - name: Compress image
