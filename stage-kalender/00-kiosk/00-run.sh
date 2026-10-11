@@ -73,6 +73,22 @@ EOF
 # kiosk has no interactive user to approve one.
 install -v -m 644 files/51kalender-unattended-upgrades "${ROOTFS_DIR}/etc/apt/apt.conf.d/51kalender-unattended-upgrades"
 
+# WiFi power saving causes brief, periodic disconnects on Raspberry Pi
+# WiFi chipsets. Confirmed live on a Pi 5: ~90 seconds after a successful
+# boot-time connection, the AP re-authentication that follows one of
+# these drops fails outright ("no secrets: No agents were available for
+# this request") since this headless kiosk has no secret agent to answer
+# NetworkManager's re-prompt -- even though the password is already
+# stored (psk-flags: none) and worked moments earlier for the initial
+# connection. A global NetworkManager default (rather than editing the
+# connection profile itself) survives cloud-init/netplan regenerating
+# that profile fresh on every boot.
+install -v -d "${ROOTFS_DIR}/etc/NetworkManager/conf.d"
+cat > "${ROOTFS_DIR}/etc/NetworkManager/conf.d/kalender-wifi-powersave.conf" <<EOF
+[connection]
+wifi.powersave = 2
+EOF
+
 # Re-assert ownership of the whole home directory, not just the files we
 # just installed into it: stage1/01-sys-tweaks's adduser call is guarded by
 # `if ! id -u ${FIRST_USER_NAME}`, so on a cached CI build (where the user
