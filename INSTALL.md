@@ -43,8 +43,10 @@ Unter **„Storage"** die SD-Karte auswählen, die beschrieben werden soll.
 ## Schritt 5: Einstellungen öffnen
 
 Noch **nicht** auf „Next" klicken! Stattdessen unten rechts auf das
-**Zahnrad-Symbol** klicken. Dort werden WLAN und ein paar weitere Dinge
-eingestellt, bevor die Karte beschrieben wird.
+**Zahnrad-Symbol** klicken (falls nicht sichtbar, stattdessen die
+Tastenkombination <kbd>Strg</kbd>+<kbd>Umschalt</kbd>+<kbd>X</kbd>
+verwenden). Dort werden WLAN und ein paar weitere Dinge eingestellt, bevor
+die Karte beschrieben wird.
 
 ## Schritt 6: WLAN einrichten
 
