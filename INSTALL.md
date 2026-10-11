@@ -43,17 +43,19 @@ Zahnrad-Symbol unten rechts — oder mit <kbd>Strg</kbd>+<kbd>Umschalt</kbd>+<kb
 — die erweiterten Einstellungen öffnen. Dort werden WLAN und SSH
 eingerichtet, **bevor** die Karte beschrieben wird.
 
-## 4. Eigenen Admin-Zugang einrichten (optional)
+## 4. Benutzername und Passwort ändern (optional)
 
-Im Reiter **„General"** unter „Set username and password" lässt sich beim
-Flashen ein eigener Benutzername/Passwort eintragen — ein eigener
-Image-Build ist dafür nicht nötig. Das legt aber **keinen** umbenannten
-Standardnutzer an, sondern einen **zusätzlichen** sudo-fähigen Account (so
-funktioniert die Imager-Anpassung auf Trixie-basierten Images über
-cloud-init). Der eingebaute Kiosk-Nutzer `kalender` (Passwort im Image:
-`changeme`, siehe `config`) bleibt davon unberührt und meldet sich weiterhin
-automatisch am Bildschirm an. Der hier angelegte Zugang dient für SSH-Login
-und Administration.
+Im Reiter **„General"** unter „Set username and password" lassen sich
+Login-Name und Passwort des Standardnutzers (im Image: `kalender` /
+`changeme`) direkt beim Flashen ändern — ein eigener Image-Build ist dafür
+nicht nötig. Das läuft über cloud-init (Raspberry Pi OS nutzt das seit
+Trixie durchgängig für die Imager-Anpassung) und übernimmt dabei effektiv
+den eingebauten `kalender`-Nutzer: gleiche UID, Home-Verzeichnis
+entsprechend umbenannt — `kalender` selbst existiert danach nicht mehr.
+Autologin und die Kiosk-Rechte sind so eingerichtet, dass sie den
+tatsächlichen Nutzer zur Boot-Zeit über dessen UID ermitteln, nicht den
+Namen `kalender` fest annehmen, und bleiben daher unabhängig vom gewählten
+Namen funktionsfähig.
 
 ## 5. WLAN konfigurieren
 

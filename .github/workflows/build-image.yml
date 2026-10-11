@@ -54,32 +54,38 @@ jobs:
       # cache it across runs: pi-gen's own prerun.sh already skips
       # debootstrap/re-copying a stage if its rootfs dir already exists, so
       # a cache hit mostly just re-verifies already-installed packages.
+      #
+      # We cache a single privileged tar archive, not the raw directory:
+      # actions/cache's own save/restore always runs as the plain,
+      # unprivileged "runner" user, never through sudo. That's fine for
+      # ordinary build artifacts, but a full rootfs tree isn't one -- tried
+      # caching the raw directory first and hit, one after another: device
+      # nodes failing to restore outright (mknod needs root), then the
+      # restored tree silently owned by the runner's own uid instead of
+      # root, and -- confirmed live on real hardware, breaking sudo/passwd/
+      # su/mount/ping entirely -- every setuid/setgid bit silently stripped
+      # from every binary on restore. All four are the same underlying
+      # limitation (unprivileged tar cannot faithfully round-trip a real
+      # Linux rootfs's root ownership, device nodes, and special bits), so
+      # work around it once instead of patching each symptom individually:
+      # archive/extract the tree ourselves with `sudo tar --numeric-owner`,
+      # which runs with full root privileges and preserves all of that
+      # correctly, and let actions/cache treat the resulting tar as an
+      # opaque blob it never has to introspect.
       - name: Restore pi-gen work cache
         uses: actions/cache@v4
         with:
-          path: pi-gen-work-cache
+          path: pi-gen-work-cache.tar.zst
           key: pigen-work-${{ github.run_id }}
           restore-keys: |
             pigen-work-
 
-      # actions/cache's save step (see below) runs unprivileged and can only
-      # read root-owned files by first chowning them to the runner's own
-      # user -- which means they're saved into the cache tar owned by that
-      # user, not root. Its restore step is equally unprivileged, so it
-      # extracts them back AS that same user (unprivileged tar can't chown
-      # to an owner other than itself). Left alone, that silently turns
-      # almost the entire cached rootfs tree (stage0-stage2) into
-      # runner-uid-owned files instead of root-owned ones on every cache
-      # hit -- pi-gen's prerun.sh skip logic then reuses that rootfs as-is
-      # without rebuilding it, so the wrong ownership rides all the way
-      # into the final exported image (confirmed live: /etc, /usr, /home
-      # etc. on a built image all ended up owned by uid 1001, the
-      # ubuntu-latest runner's own uid, breaking login entirely). Restore
-      # real root ownership before the build touches this tree again.
-      - name: Fix work cache ownership after restore
+      - name: Extract pi-gen work cache
         run: |
           mkdir -p pi-gen-work-cache
-          sudo chown -R 0:0 pi-gen-work-cache
+          if [ -f pi-gen-work-cache.tar.zst ]; then
+            sudo tar --numeric-owner --zstd -xf pi-gen-work-cache.tar.zst -C pi-gen-work-cache
+          fi
 
       # stage-kalender's own prerun.sh only copies a fresh base from stage2
       # (copy_previous) when its own rootfs dir doesn't exist yet -- so once
@@ -111,20 +117,22 @@ jobs:
 
       # export-image is fully regenerated every run (it's what we're
       # actually building), so caching it buys nothing and would just waste
-      # cache storage. The build container runs as root, so its files are
-      # root-owned on the runner too; actions/cache's implicit save at the
-      # end of the job needs to read them, hence the chown. Device nodes
-      # (rootfs/dev/null etc., created by debootstrap) can't be restored by
-      # actions/cache's unprivileged tar (mknod needs root) and make the
-      # whole restore fail; they're also never actually needed from the
-      # cache since pi-gen's on_chroot always bind-mounts the real /dev over
-      # a stage's rootfs/dev before using it -- so just drop them.
+      # cache storage -- it lives at pi-gen-work-cache/kalender/<stage>/
+      # export-image (WORK_DIR is "${BASE_DIR}/work/${IMG_NAME}", and
+      # IMG_NAME is "kalender" in our config), hence the two-level glob
+      # below. Re-archive with sudo tar --numeric-owner, same as the
+      # restore side, so root ownership, device nodes and setuid/setgid
+      # bits all survive the cache round-trip intact; only the resulting
+      # tar file itself needs to be chowned to the runner's own user
+      # afterwards, since actions/cache's save step (which runs next, as
+      # an automatic post-job hook) is unprivileged and just needs to read
+      # that one file.
       - name: Trim and prepare work cache for saving
         if: always()
         run: |
-          sudo rm -rf pi-gen-work-cache/*/export-image pi-gen-work-cache/build.log
-          sudo find pi-gen-work-cache -depth \( -type c -o -type b \) -delete
-          sudo chown -R "$(id -u):$(id -g)" pi-gen-work-cache
+          sudo rm -rf pi-gen-work-cache/*/*/export-image pi-gen-work-cache/build.log
+          sudo tar --numeric-owner --zstd -cf pi-gen-work-cache.tar.zst -C pi-gen-work-cache .
+          sudo chown "$(id -u):$(id -g)" pi-gen-work-cache.tar.zst
 
       - name: Determine release tag
         id: tag
