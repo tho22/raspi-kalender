@@ -1,8 +1,15 @@
 name: Build kiosk image
 
-# Manual trigger only (no push/PR trigger): this build takes 45-90+ minutes
-# under QEMU emulation and isn't meant to run on every commit.
+# Runs automatically on every push to master (in practice: every PR merge,
+# since master is branch-protected and has no other way to receive commits)
+# and can still be triggered manually for test branches or a rebuild. Safe
+# to run on every master push despite the 45-90+ minute build time, since
+# master only moves on a deliberate, reviewed merge -- not on every commit
+# the way a plain push trigger on an unprotected branch would.
 on:
+  push:
+    branches:
+      - master
   workflow_dispatch:
     inputs:
       release_tag:
