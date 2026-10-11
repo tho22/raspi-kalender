@@ -1,4 +1,4 @@
-# Kalender-Pi einrichten (Anleitung für Windows)
+# Kalender-Pi einrichten
 
 Diese Anleitung zeigt Schritt für Schritt, wie du eine SD-Karte vorbereitest,
 damit dein Raspberry Pi nach dem Einschalten automatisch deinen
@@ -7,7 +7,7 @@ das fertige Image kommt direkt von GitHub.
 
 ## Was du brauchst
 
-- Einen Windows-PC mit SD-Kartenleser (eingebaut oder als USB-Adapter)
+- Einen Computer mit SD-Kartenleser (eingebaut oder als USB-Adapter)
 - Eine SD-Karte (mindestens 8 GB)
 - Den Namen (SSID) und das Passwort deines WLANs
 - Einen Raspberry Pi (Zero 2 W, 4 oder 5) mit Netzteil
@@ -118,8 +118,8 @@ Die IP-Adresse des Pi findest du z. B. in der Geräteliste deines
 WLAN-Routers (oft über eine Web-Adresse wie `192.168.0.1` oder
 `192.168.1.1` erreichbar – steht meist auf der Rückseite des Routers).
 
-Danach auf dem Windows-PC eine Eingabeaufforderung oder PowerShell öffnen
-und eintippen (eigenen Benutzernamen und IP-Adresse einsetzen):
+Danach ein Terminal-Programm öffnen und eintippen (eigenen Benutzernamen
+und IP-Adresse einsetzen):
 
 ```
 ssh kalender@<ip-adresse>
