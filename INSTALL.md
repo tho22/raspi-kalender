@@ -1,115 +1,137 @@
-# SD-Karte mit dem Raspberry Pi Imager einrichten
+# Kalender-Pi einrichten
 
-So spielst du ein fertig gebautes Kalender-Image (aus `pi-gen/deploy/`) auf
-eine SD-Karte und richtest WLAN sowie SSH-Zugang direkt über die
-Konfiguration im Raspberry Pi Imager ein — ohne Monitor, Tastatur oder
-manuelle Einrichtung am Gerät selbst.
+Diese Anleitung zeigt Schritt für Schritt, wie du eine SD-Karte vorbereitest,
+damit dein Raspberry Pi nach dem Einschalten automatisch deinen
+Google-Kalender anzeigt. Du musst dafür nichts programmieren oder bauen –
+das fertige Image kommt direkt von GitHub.
 
-## Voraussetzungen
+## Was du brauchst
 
-- Ein Rechner mit installiertem **[Raspberry Pi Imager](https://www.raspberrypi.com/software/)**
-  (offizielle Software von Raspberry Pi) und einem SD-Kartenleser
-- Eine SD-Karte (mind. 8 GB)
-- Die Image-Datei des Kalender-Builds: entweder aus `pi-gen/deploy/` (z. B.
-  `2026-10-08-kalender.img`) oder das `.img.xz` von einem
-  [GitHub-Actions-Release](https://github.com/tho22/raspi-kalender/releases)
-- SSID und Passwort des WLANs, mit dem sich der Pi verbinden soll
-- Optional: der eigene SSH-Public-Key, für späteren SSH-Zugriff auf das Gerät
+- Einen Computer mit SD-Kartenleser (eingebaut oder als USB-Adapter)
+- Eine SD-Karte (mindestens 8 GB)
+- Den Namen (SSID) und das Passwort deines WLANs
+- Einen Raspberry Pi (Zero 2 W, 4 oder 5) mit Netzteil
 
-## 1. Imager öffnen und eigenes Image wählen
+## Schritt 1: Raspberry Pi Imager installieren
 
-Raspberry Pi Imager starten und unter **„Operating System"** ganz unten
-**„Use custom"** (bzw. „Eigenes Image verwenden") auswählen. Dort die
-Image-Datei des Kalender-Builds auswählen — **nicht** ein offizielles
-Raspberry Pi OS Image, da dieses Image bereits den fertigen Kiosk-Aufbau
-enthält.
+Lade den **[Raspberry Pi Imager](https://www.raspberrypi.com/software/)**
+herunter (offizielle Software von Raspberry Pi, kostenlos) und installiere
+ihn wie gewohnt.
 
-> Kommt die Datei als `.img.xz` von einem GitHub-Actions-Release: nicht
-> vorher entpacken, der Imager liest komprimierte Images (`.xz`, `.zip`,
-> …) direkt.
+## Schritt 2: Image-Datei herunterladen
 
-## 2. Speicherziel (SD-Karte) wählen
+Gehe zur **[Releases-Seite des Projekts](https://github.com/tho22/raspi-kalender/releases)**
+und lade bei der neuesten Version die Datei mit der Endung `.img.xz`
+herunter (z. B. `kalender-build-2026-10-11-5.img.xz`). Sie landet normalerweise
+im Ordner „Downloads". Die Datei muss **nicht** entpackt werden.
 
-Unter **„Storage"** die richtige SD-Karte auswählen.
+## Schritt 3: Imager öffnen und Image auswählen
 
-> **Achtung:** Der gesamte Inhalt der gewählten Karte wird überschrieben. Im
-> Zweifel Kartengröße und Modellbezeichnung im Imager mit der physischen
-> Karte abgleichen, bevor es weitergeht.
+1. Raspberry Pi Imager starten.
+2. Unter **„Operating System"** ganz nach unten scrollen und **„Use custom"**
+   auswählen.
+3. Die gerade heruntergeladene `.img.xz`-Datei auswählen.
 
-## 3. Betriebssystem anpassen (OS Customisation) öffnen
+## Schritt 4: SD-Karte auswählen
 
-Noch **nicht** auf „Next"/„Schreiben" klicken. Stattdessen über das
-Zahnrad-Symbol unten rechts — oder mit <kbd>Strg</kbd>+<kbd>Umschalt</kbd>+<kbd>X</kbd>
-— die erweiterten Einstellungen öffnen. Dort werden WLAN und SSH
-eingerichtet, **bevor** die Karte beschrieben wird.
+Unter **„Storage"** die SD-Karte auswählen, die beschrieben werden soll.
 
-## 4. Benutzername und Passwort ändern (optional)
+> ⚠️ **Achtung:** Der gesamte Inhalt der Karte wird dabei gelöscht. Prüfe
+> vor dem nächsten Schritt sicherheitshalber, ob wirklich die richtige Karte
+> ausgewählt ist (Größe vergleichen).
 
-Im Reiter **„General"** unter „Set username and password" lassen sich
-Login-Name und Passwort des Standardnutzers (im Image: `kalender` /
-`changeme`) direkt beim Flashen ändern — ein eigener Image-Build ist dafür
-nicht nötig. Das läuft über cloud-init (Raspberry Pi OS nutzt das seit
-Trixie durchgängig für die Imager-Anpassung) und übernimmt dabei effektiv
-den eingebauten `kalender`-Nutzer: gleiche UID, Home-Verzeichnis
-entsprechend umbenannt — `kalender` selbst existiert danach nicht mehr.
-Autologin und die Kiosk-Rechte sind so eingerichtet, dass sie den
-tatsächlichen Nutzer zur Boot-Zeit über dessen UID ermitteln, nicht den
-Namen `kalender` fest annehmen, und bleiben daher unabhängig vom gewählten
-Namen funktionsfähig.
+## Schritt 5: Einstellungen öffnen
 
-## 5. WLAN konfigurieren
+Noch **nicht** auf „Next" klicken! Stattdessen unten rechts auf das
+**Zahnrad-Symbol** klicken (falls nicht sichtbar, stattdessen die
+Tastenkombination <kbd>Strg</kbd>+<kbd>Umschalt</kbd>+<kbd>X</kbd>
+verwenden). Dort werden WLAN und ein paar weitere Dinge eingestellt, bevor
+die Karte beschrieben wird.
 
-Im Reiter **„General"** (bzw. Allgemein) den Haken bei „Configure wireless
-LAN" setzen und ausfüllen:
+## Schritt 6: WLAN einrichten
 
-| Feld                   | Wert              |
-|------------------------|-------------------|
-| SSID                   | Name des WLANs    |
-| Password               | WLAN-Passwort     |
-| Wireless LAN country   | `DE`              |
+Im Reiter **„General"** den Haken bei **„Configure wireless LAN"** setzen
+und ausfüllen:
 
-## 6. SSH aktivieren (optional, aber empfohlen)
+| Feld                 | Wert           |
+|----------------------|----------------|
+| SSID                 | Name deines WLANs |
+| Password             | Dein WLAN-Passwort |
+| Wireless LAN country | `DE`           |
 
-Im Reiter **„Services"** SSH aktivieren:
+## Schritt 7: Zeitzone und Tastatur prüfen
 
-- **„Allow public-key authentication only"** wählen
-- Den eigenen Public Key einfügen (Inhalt der `.pub`-Datei, z. B.
-  `~/.ssh/id_ecdsa.pub`)
-
-Passwort-Login für SSH bewusst deaktiviert lassen, solange am Gerät noch das
-Standardpasswort des Benutzers `kalender` gesetzt ist (siehe
-Sicherheitshinweis in [README.md](README.md)).
-
-## 7. Gebietsschema prüfen
-
-Im Reiter **„General"** unter „Set locale settings":
+Im selben Reiter unter **„Set locale settings"**:
 
 - Zeitzone: `Europe/Berlin`
 - Tastaturlayout: `de`
 
-Diese Werte stecken zwar schon im Image selbst (siehe `config`), eine
-Übereinstimmung schadet aber nicht.
+(Diese Werte sind im Image schon richtig voreingestellt – schadet aber
+nicht, sie hier nochmal zu bestätigen.)
 
-## 8. Speichern, schreiben, bestätigen
+## Schritt 8: Eigenen Benutzernamen festlegen (empfohlen)
 
-Einstellungen mit „Save" übernehmen, dann den Schreibvorgang starten und die
-Sicherheitsabfrage (Karteninhalt wird gelöscht) bestätigen. Je nach
-Kartengeschwindigkeit dauert das Schreiben einige Minuten.
+Ebenfalls im Reiter **„General"**, unter **„Set username and password"**:
+Trage hier einen eigenen Benutzernamen und ein eigenes, sicheres Passwort
+ein. Das ersetzt den voreingestellten Zugang (`kalender` / `changeme`).
 
-## 9. Karte einsetzen und ersten Boot abwarten
+> Lässt du dieses Feld leer, bleibt der voreingestellte Nutzername
+> `kalender` mit dem Passwort `changeme` aktiv – das sollte dann möglichst
+> bald geändert werden (siehe Hinweis ganz unten).
 
-Karte in den Raspberry Pi stecken und Strom anschließen. Der erste Start
-dauert länger als gewohnt: Im Hintergrund werden WLAN, SSH-Schlüssel und
-weitere Einstellungen aus der Konfiguration übernommen, danach startet das
-Gerät automatisch neu und zeigt anschließend direkt den Kalender im
-Kiosk-Modus.
+## Schritt 9 (optional): Fernzugriff per SSH einrichten
 
-> **Erreichbarkeit testen:** Sobald das WLAN verbunden ist, lässt sich das
-> Gerät per `ssh kalender@<ip-adresse>` erreichen (IP-Adresse z. B. über die
-> Router-Oberfläche ermitteln).
+Falls du später vom PC aus auf den Pi zugreifen möchtest (z. B. um etwas
+nachzuschauen), kannst du das im Reiter **„Services"** aktivieren:
+
+- Haken bei **„Enable SSH"** setzen
+- **„Use password authentication"** auswählen (einfachste Variante – nutzt
+  den Benutzernamen/Passwort aus Schritt 8)
+
+Das ist komplett optional und wird für den normalen Betrieb des
+Kalender-Bildschirms nicht gebraucht.
+
+## Schritt 10: Speichern und schreiben
+
+Unten auf **„Save"** klicken, dann **„Next"** bzw. **„Write"**, um das
+Schreiben zu starten. Die Sicherheitsabfrage bestätigen – der Karteninhalt
+wird jetzt überschrieben. Je nach SD-Karte dauert das einige Minuten.
+
+## Schritt 11: Karte einsetzen und starten
+
+1. SD-Karte aus dem PC entnehmen und in den Raspberry Pi stecken.
+2. Den Pi mit Strom versorgen.
+
+Der erste Start dauert etwas länger als gewohnt (die WLAN- und sonstigen
+Einstellungen werden im Hintergrund übernommen, danach startet das Gerät
+einmal automatisch neu). Anschließend zeigt der Bildschirm direkt den
+Kalender im Vollbild.
+
+### Erster Login bei Google
+
+Beim allerersten Start ist noch kein Google-Konto hinterlegt. Auf den
+kleinen blauen Punkt oben rechts auf dem Bildschirm tippen, um die
+Bildschirmtastatur einzublenden, und dich mit dem Google-Konto anmelden,
+dem der Kalender freigegeben wurde. Das muss nur **einmal** gemacht werden.
+
+### Zugriff per SSH (falls in Schritt 9 eingerichtet)
+
+Die IP-Adresse des Pi findest du z. B. in der Geräteliste deines
+WLAN-Routers (oft über eine Web-Adresse wie `192.168.0.1` oder
+`192.168.1.1` erreichbar – steht meist auf der Rückseite des Routers).
+
+Danach ein Terminal-Programm öffnen und eintippen (eigenen Benutzernamen
+und IP-Adresse einsetzen):
+
+```
+ssh kalender@<ip-adresse>
+```
 
 ---
 
-Das Standardpasswort des Benutzers `kalender` ist bekannt (`changeme`) — am
-Gerät sollte es nach der Ersteinrichtung geändert werden, sofern SSH-
-Passwort-Login je aktiviert wird.
+**Sicherheitshinweis:** Falls in Schritt 8 kein eigener Benutzername
+vergeben wurde, ist das voreingestellte Passwort (`changeme`) öffentlich
+bekannt (es steht in diesem Projekt auf GitHub). Für den Einsatz im eigenen
+Zuhause meist unkritisch, da nur Geräte im eigenen WLAN zugreifen können –
+für mehr Sicherheit aber trotzdem bald ein eigenes Passwort setzen (z. B.
+nachträglich per SSH mit dem Befehl `passwd`).
