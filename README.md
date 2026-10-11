@@ -164,9 +164,9 @@ bei jedem Lauf frisch entsteht.
 ## Vor dem Build unbedingt anpassen
 
 **`FIRST_USER_PASS` in `config`** steht auf dem Platzhalter `changeme`. Da
-`DISABLE_FIRST_BOOT_USER_RENAME=1` gesetzt ist (damit pi-gens eigener
-interaktiver Umbenennungs-Dialog nicht mit der Imager-gesteuerten
-Umbenennung – siehe unten – kollidiert), muss hier ein echtes Passwort rein,
+`DISABLE_FIRST_BOOT_USER_RENAME=1` gesetzt ist (pi-gens eigener
+Build-Zeit-Umbenennungsmechanismus wird nicht gebraucht, da `kalender` schon
+beim Build als Nutzer angelegt wird), muss hier ein echtes Passwort rein,
 sonst ist das Gerät mit Standard-Zugangsdaten und aktiviertem SSH
 erreichbar.
 
@@ -177,15 +177,18 @@ WLAN-Zugangsdaten im Image oder im Git-Repo.
 
 ### Benutzername ändern
 
-Der Imager kann den Standardnutzer (`kalender`) beim Flashen umbenennen
-(`custom.toml`, verarbeitet von `userconf-pi`, das bereits installiert ist).
+Raspberry Pi OS nutzt seit Trixie für die Imager-„OS customisation"
+durchgängig [cloud-init](https://cloudinit.readthedocs.io/) (das Image bringt
+cloud-init + `rpi-cloud-init-mods` standardmäßig mit), nicht mehr das
+klassische `custom.toml`/`userconf-pi`. Trägt man im Imager einen
+Benutzernamen ein, übernimmt cloud-init beim ersten Boot effektiv den
+eingebauten `kalender`-Nutzer: gleiche UID (1000), Home-Verzeichnis
+entsprechend umbenannt und korrekt übernommen – `kalender` selbst existiert
+danach nicht mehr. Live verifiziert per SSH auf einem laufenden Gerät.
 Autologin löst dazu den tatsächlichen Nutzer über dessen UID (1000) zur
 Boot-Zeit dynamisch auf (`kalender-autologin-getty`), und die Sudoers-Regel
 für die Display-Erkennung ist ebenfalls per UID (`#1000`) statt per Name
 gebunden – beides bleibt also unabhängig vom gewählten Namen funktionsfähig.
-Nur die Home-Verzeichnis-Pfade sind beim Build auf `kalender` gemünzt; das ist
-unproblematisch, da `userconf-pi` das Home-Verzeichnis samt Inhalt bei der
-Umbenennung mitverschiebt.
 
 ## Bekannte Einschränkungen
 

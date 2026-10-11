@@ -48,9 +48,14 @@ eingerichtet, **bevor** die Karte beschrieben wird.
 Im Reiter **„General"** unter „Set username and password" lassen sich
 Login-Name und Passwort des Standardnutzers (im Image: `kalender` /
 `changeme`) direkt beim Flashen ändern — ein eigener Image-Build ist dafür
-nicht nötig. Autologin und die Kiosk-Rechte sind so eingerichtet, dass sie
-den tatsächlichen Nutzer zur Boot-Zeit ermitteln, nicht den Namen `kalender`
-fest annehmen.
+nicht nötig. Das läuft über cloud-init (Raspberry Pi OS nutzt das seit
+Trixie durchgängig für die Imager-Anpassung) und übernimmt dabei effektiv
+den eingebauten `kalender`-Nutzer: gleiche UID, Home-Verzeichnis
+entsprechend umbenannt — `kalender` selbst existiert danach nicht mehr.
+Autologin und die Kiosk-Rechte sind so eingerichtet, dass sie den
+tatsächlichen Nutzer zur Boot-Zeit über dessen UID ermitteln, nicht den
+Namen `kalender` fest annehmen, und bleiben daher unabhängig vom gewählten
+Namen funktionsfähig.
 
 ## 5. WLAN konfigurieren
 
