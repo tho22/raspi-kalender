@@ -80,6 +80,26 @@ jobs:
           mkdir -p pi-gen-work-cache
           sudo chown -R 0:0 pi-gen-work-cache
 
+      # stage-kalender's own prerun.sh only copies a fresh base from stage2
+      # (copy_previous) when its own rootfs dir doesn't exist yet -- so once
+      # it exists in the persistent work cache, it's reused as-is forever,
+      # and our 00-run.sh scripts run again each time but on top of that
+      # same stale base rather than a fresh copy of the current (correctly
+      # cached) stage2. Actions that ADD something (installing a file,
+      # purging a package) still take effect every run since the scripts
+      # themselves always re-run; but reverting one (e.g. no longer purging
+      # a package) has no effect, since nothing re-adds what a previous
+      # run's script already removed from that same frozen base. Confirmed
+      # live: removing a package purge from stage-kalender's script had no
+      # effect on the next build because the package had already been
+      # purged from the cached stage-kalender rootfs in an earlier run, and
+      # that stage never got refreshed from stage2 to undo it. stage-kalender
+      # is actively developed (unlike stage0-2, which only change when
+      # pi-gen's own pinned tag changes) and cheap to rebuild, so always
+      # force a fresh copy from stage2 for it.
+      - name: Force a fresh stage-kalender base every build
+        run: sudo rm -rf pi-gen-work-cache/kalender/stage-kalender
+
       - name: Build image
         env:
           PIGEN_DOCKER_OPTS: "--mount type=bind,source=${{ github.workspace }}/pi-gen-work-cache,target=/pi-gen/work"
