@@ -211,12 +211,13 @@ gebunden – beides bleibt also unabhängig vom gewählten Namen funktionsfähig
 
 ## Bekannte Einschränkungen
 
-- **Kein Bild auf Geräten mit <1GB RAM** (z.B. Pi Zero 2 W): Chromium zeigt
-  dort sonst einen blockierenden Bestätigungsdialog vor dem Start. Behoben
-  durch `--no-memcheck` in `wayfire.ini`. Auf einem Pi Zero 2 W (512 MB RAM)
-  ist Chromium generell knapp bemessen (~210–215 MB belegt im Betrieb nach
+- **Knapper Speicher auf Geräten mit <1GB RAM** (z.B. Pi Zero 2 W, 512 MB):
+  Chromium ist dort eng bemessen (~210–215 MB belegt im Betrieb nach
   Site-Isolation-Deaktivierung und weiteren Speicher-Flags in `wayfire.ini`,
-  Swap wird genutzt), läuft aber stabil.
+  Swap wird genutzt), läuft aber stabil. Ohne das `--no-memcheck`-Flag in
+  `wayfire.ini` würde Chromium bei <1GB RAM zusätzlich einen blockierenden
+  Bestätigungsdialog vor dem Start zeigen – das Flag ist bereits gesetzt,
+  betrifft das gebaute Image also nicht.
 - **Kein automatisierter Google-Login**: 2FA und Googles
   Automatisierungsschutz lassen sich nicht in den Image-Build integrieren
   (siehe nächster Abschnitt).
