@@ -1,6 +1,6 @@
 # raspi-kalender
 
-Ein Raspberry Pi OS Lite (Bookworm), das nach dem Boot automatisch einen
+Ein Raspberry Pi OS Lite (Trixie), das nach dem Boot automatisch einen
 Chromium-Kiosk mit einem freigegebenen Google-Kalender zeigt – inklusive
 Bildschirmtastatur für den einmaligen Google-Login per Touch, und so gebaut,
 dass dieselbe SD-Karte unverändert auf einem Pi Zero 2 W, Pi 4 oder Pi 5
@@ -66,10 +66,9 @@ Damit dieselbe Karte unverändert auf allen drei Modellen bootet:
   `/sys/class/drm/card*/device/uevent` das `vc4-drm`-Gerät, statt eine
   Kartennummer hart zu kodieren.
 
-  ⚠️ **Nicht verifiziert:** dieser Stack wurde bisher nur auf dem Pi Zero 2 W
-  real getestet, nicht auf dem Pi 5. Die Pi-5-Geräteerkennung ist eine
-  Vorsichtsmaßnahme, aber unerprobt – vor einem echten Pi-5-Einsatz einmal mit
-  angeschlossenem Bildschirm testen.
+  Auf echter Hardware verifiziert: sowohl Pi Zero 2 W als auch Pi 5 (inkl.
+  der dynamischen `vc4-drm`-Erkennung bei den zwei DRM-Geräten) booten,
+  zeigen das Display korrekt an und funktionieren mit Touch/Tastatur.
 
 **Touch-Hinweis:** Auf dem Pi Zero 2 W gibt es zwei optisch identische
 Micro-USB-Buchsen; nur die mit `USB` beschriftete (näher am HDMI-Port) ist der
@@ -82,10 +81,8 @@ bei bereits angeschlossenem Kabel behebt das zuverlässig.
 
 - `pi-gen/` – **Git-Submodule** auf das originale
   https://github.com/RPi-Distro/pi-gen (kein Fork), gepinnt auf Tag
-  `2025-05-13-raspios-bookworm-armhf` (letzter von Raspberry Pi gepflegter
-  Bookworm-armhf-Stand; `master` zielt inzwischen auf Trixie). Der
-  Submodule-Checkout bleibt unverändert; Anpassungen daran liegen als Patch
-  separat vor.
+  `2026-10-06-raspios-trixie-armhf`. Der Submodule-Checkout bleibt
+  unverändert; Anpassungen daran liegen als Patch separat vor.
 - `patches/pi-gen-fixes.patch` – Korrekturen an pi-gen selbst: kaputter
   Standard-Apt-Mirror in `stage0`, zu knappe Image-Größen-Marge in
   `export-image` (reicht sonst nicht für das abschließende Chromium-Upgrade),
@@ -98,7 +95,7 @@ bei bereits angeschlossenem Kabel behebt das zuverlässig.
 - `stage-kalender/` – eigene pi-gen-Stage, die nach `stage2` (fertiges
   Lite-Image) angehängt wird; wird von `setup.sh` nach `pi-gen/stage-kalender`
   kopiert:
-  - `00-kiosk/00-packages-nr` – `wayfire`, `chromium-browser`, Build-Deps für
+  - `00-kiosk/00-packages-nr` – `wayfire`, `chromium`, Build-Deps für
     `wvkbd`/`kbd-toggle`
   - `00-kiosk/00-run.sh` – Autologin, `.bash_profile`, Wayfire-Config,
     modellabhängige `config.txt`-Overlays, kompiliert `wvkbd`/`kbd-toggle`
@@ -152,14 +149,36 @@ erfolgreichen Lauf werden automatisch nur die `keep_releases`
 (Workflow-Eingabe, Default 3) neuesten Releases behalten, ältere werden samt
 Tag gelöscht – Releases verfallen sonst nicht von selbst.
 
-pi-gens Arbeitsverzeichnis (stage0–stage2/stage-kalender-Rootfs) wird über
-`actions/cache` zwischen Läufen wiederverwendet (via `PIGEN_DOCKER_OPTS` auf
-ein Cache-Verzeichnis statt eines anonymen Docker-Volumes gemountet), analog
-zum lokalen `CONTINUE=1`. Dadurch entfällt bei unveränderten frühen Stages
-das erneute `debootstrap` und Herunterladen der Basispakete – nur
-tatsächlich geänderte Stages laufen neu (pi-gens eigene Erkennung entscheidet
-das, nicht der Cache selbst). `export-image` wird nie gecacht, da es ohnehin
-bei jedem Lauf frisch entsteht.
+pi-gens Arbeitsverzeichnis (stage0–stage2-Rootfs) wird zwischen Läufen über
+`actions/cache` wiederverwendet (via `PIGEN_DOCKER_OPTS` auf ein
+Cache-Verzeichnis statt eines anonymen Docker-Volumes gemountet), analog zum
+lokalen `CONTINUE=1`. Dadurch entfällt bei unveränderten frühen Stages das
+erneute `debootstrap` und Herunterladen der Basispakete.
+
+Gecacht wird dabei nicht das rohe Verzeichnis, sondern ein einziges, mit
+`sudo tar --numeric-owner` privilegiert gepacktes Tar-Archiv: `actions/cache`
+selbst läuft immer unprivilegiert, was für einen echten, root-eigenen
+Linux-Rootfs-Baum mehrfach schiefging (Device-Nodes, die beim
+Wiederherstellen `mknod` als Root brauchen; Ownership, die beim
+unprivilegierten Entpacken stillschweigend auf den Runner-User statt root
+kippt; Setuid/Setgid-Bits, die beim unprivilegierten Entpacken ebenso
+verschwinden – live auf echter Hardware bestätigt, dass dadurch `sudo` auf
+dem fertigen Image komplett kaputt war). Das eigene, privilegierte
+Tar-Archiv umgeht all das in einem Schritt.
+
+`stage-kalender` selbst wird **nicht** mitgecacht, sondern bei jedem Lauf
+frisch von `stage2` kopiert: es wird aktiv weiterentwickelt (anders als
+stage0–stage2, die sich nur mit einem neuen pi-gen-Tag ändern), und
+rückgängig gemachte Änderungen (z.B. ein entferntes `apt-get purge`) hätten
+sonst auf einer bereits gecachten, veralteten Basis keine Wirkung.
+`export-image` wird ebenfalls nie gecacht, da es ohnehin bei jedem Lauf
+frisch entsteht.
+
+Alte `pigen-work-*`-Caches werden nach jedem erfolgreichen Lauf automatisch
+bis auf die letzten zwei gelöscht (`actions/cache`-Einträge sind unveränderlich,
+jeder Lauf legt also zwangsläufig einen neuen an) – sonst häufen sie sich bis
+zum 10-GB-Limit pro Repo an, ab dem GitHub ohnehin unvorhersehbar die
+ältesten verdrängt.
 
 ## Vor dem Build unbedingt anpassen
 
@@ -192,13 +211,13 @@ gebunden – beides bleibt also unabhängig vom gewählten Namen funktionsfähig
 
 ## Bekannte Einschränkungen
 
-- **Kein Bild auf Geräten mit <1GB RAM** (z.B. Pi Zero 2 W): Der
-  `chromium-browser`-Wrapper zeigt dort sonst einen blockierenden
-  Bestätigungsdialog vor dem Start. Behoben durch `--no-memcheck` in
-  `wayfire.ini`. Auf einem Pi Zero 2 W (512 MB RAM) ist Chromium generell
-  knapp bemessen (~230–300 MB belegt im Betrieb, Swap wird genutzt), läuft
-  aber stabil.
-- **Pi 5 unverifiziert** (siehe oben).
+- **Knapper Speicher auf Geräten mit <1GB RAM** (z.B. Pi Zero 2 W, 512 MB):
+  Chromium ist dort eng bemessen (~210–215 MB belegt im Betrieb nach
+  Site-Isolation-Deaktivierung und weiteren Speicher-Flags in `wayfire.ini`,
+  Swap wird genutzt), läuft aber stabil. Ohne das `--no-memcheck`-Flag in
+  `wayfire.ini` würde Chromium bei <1GB RAM zusätzlich einen blockierenden
+  Bestätigungsdialog vor dem Start zeigen – das Flag ist bereits gesetzt,
+  betrifft das gebaute Image also nicht.
 - **Kein automatisierter Google-Login**: 2FA und Googles
   Automatisierungsschutz lassen sich nicht in den Image-Build integrieren
   (siehe nächster Abschnitt).

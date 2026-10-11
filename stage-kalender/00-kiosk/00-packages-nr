@@ -1,5 +1,5 @@
 wayfire
-chromium-browser
+chromium
 unattended-upgrades
 git
 build-essential
