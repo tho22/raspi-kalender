@@ -168,25 +168,25 @@ beim Build als Nutzer angelegt wird), muss hier ein echtes Passwort rein,
 sonst ist das Gerät mit Standard-Zugangsdaten und aktiviertem SSH
 erreichbar.
 
-WLAN, SSH-Key und optional ein eigener Admin-Zugang werden bewusst **nicht**
-im Image gebacken, sondern beim Flashen über den Raspberry Pi Imager gesetzt
-(siehe [INSTALL.md](INSTALL.md)) – damit landen keine WLAN-Zugangsdaten im
-Image oder im Git-Repo.
+WLAN, SSH-Key und optional ein anderer Benutzername/Passwort werden bewusst
+**nicht** im Image gebacken, sondern beim Flashen über den Raspberry Pi
+Imager gesetzt (siehe [INSTALL.md](INSTALL.md)) – damit landen keine
+WLAN-Zugangsdaten im Image oder im Git-Repo.
 
-### Eigenen Admin-Zugang einrichten
+### Benutzername ändern
 
-Raspberry Pi OS basiert seit Trixie für die Imager-„OS customisation"
-durchgängig auf [cloud-init](https://cloudinit.readthedocs.io/); das Image
-bringt cloud-init + `rpi-cloud-init-mods` standardmäßig mit. Trägt man im
-Imager Benutzername/Passwort/SSH-Key ein, legt cloud-init daraus beim ersten
-Boot einen **zusätzlichen** sudo-fähigen Account an – es ist **keine**
-Umbenennung des eingebauten `kalender`-Nutzers (anders als beim klassischen
-`custom.toml`/`userconf-pi`-Mechanismus älterer Raspberry-Pi-OS-Versionen).
-Der Kiosk-Autologin auf der Konsole bleibt davon unberührt: er löst den
-tatsächlichen Nutzer immer dynamisch über dessen UID (1000) auf
-(`kalender-autologin-getty`) und zeigt daher weiterhin den Kalender als
-`kalender` an. Der über den Imager angelegte Zugang dient nur für SSH-Login
-und Administration.
+Raspberry Pi OS nutzt seit Trixie für die Imager-„OS customisation"
+durchgängig [cloud-init](https://cloudinit.readthedocs.io/) (das Image bringt
+cloud-init + `rpi-cloud-init-mods` standardmäßig mit), nicht mehr das
+klassische `custom.toml`/`userconf-pi`. Trägt man im Imager einen
+Benutzernamen ein, übernimmt cloud-init beim ersten Boot effektiv den
+eingebauten `kalender`-Nutzer: gleiche UID (1000), Home-Verzeichnis
+entsprechend umbenannt und korrekt übernommen – `kalender` selbst existiert
+danach nicht mehr. Live verifiziert per SSH auf einem laufenden Gerät.
+Autologin löst dazu den tatsächlichen Nutzer über dessen UID (1000) zur
+Boot-Zeit dynamisch auf (`kalender-autologin-getty`), und die Sudoers-Regel
+für die Display-Erkennung ist ebenfalls per UID (`#1000`) statt per Name
+gebunden – beides bleibt also unabhängig vom gewählten Namen funktionsfähig.
 
 ## Bekannte Einschränkungen
 
