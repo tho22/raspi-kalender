@@ -59,9 +59,17 @@ EOF
 # kiosk has no interactive user to approve one.
 install -v -m 644 files/51kalender-unattended-upgrades "${ROOTFS_DIR}/etc/apt/apt.conf.d/51kalender-unattended-upgrades"
 
+# Re-assert ownership of the whole home directory, not just the files we
+# just installed into it: stage1/01-sys-tweaks's adduser call is guarded by
+# `if ! id -u ${FIRST_USER_NAME}`, so on a cached CI build (where the user
+# already exists in the restored work-directory cache) adduser -- and the
+# correct ownership it would set up -- never runs again. Confirmed live:
+# a build where the CI cache round-trip had reset the home directory's
+# owner left /home/kalender owned by root, breaking login entirely
+# ("change directory failed: Permission denied"). This runs unconditionally
+# on every build regardless of caching, so it self-heals that every time.
 on_chroot << EOF
-chown ${FIRST_USER_NAME}:${FIRST_USER_NAME} /home/${FIRST_USER_NAME}/.bash_profile
-chown -R ${FIRST_USER_NAME}:${FIRST_USER_NAME} /home/${FIRST_USER_NAME}/.config
+chown -R ${FIRST_USER_NAME}:${FIRST_USER_NAME} /home/${FIRST_USER_NAME}
 EOF
 
 # This image is meant to boot unmodified on a Pi Zero 2 W, a Pi 4 or a Pi 5,
@@ -151,4 +159,23 @@ rm -rf "${ROOTFS_DIR}/usr/src/wvkbd" "${ROOTFS_DIR}/usr/src/kbd-toggle.c"
 # runtime counterparts and could otherwise remove those too.
 on_chroot << 'EOF'
 apt-get purge -y --auto-remove git build-essential pkg-config wayland-protocols
+EOF
+
+# Drop stock raspios-lite packages that are irrelevant to a HDMI+touch+WLAN
+# kiosk: GPIO/camera/sensor tooling (robotics use cases), physical-media and
+# modem/MTP support, Raspberry Pi's own physical-keyboard firmware tooling
+# (we built our own on-screen keyboard instead), rpi-update (bypasses apt to
+# pull untested firmware -- a liability more than a convenience on a
+# deployed device), and rpi-connect-lite (Raspberry Pi's own cloud-based
+# remote-access/screen-sharing agent -- an unnecessary external-service
+# dependency for a device we already reach over plain SSH). Bluetooth is
+# kept. Queried with dpkg-query first since not every package here exists on
+# every pi-gen release/tag this image might be built against.
+on_chroot << 'EOF'
+set -e
+UNUSED_PACKAGES="rpi-connect-lite v4l-utils gpiod python3-libgpiod python3-gpiozero python3-rpi-lgpio python3-spidev python3-smbus2 rpicam-apps-lite rpi-keyboard-config rpi-keyboard-fw-update mkvtoolnix cifs-utils ntfs-3g libmtp-runtime usb-modeswitch rpi-update"
+INSTALLED_UNUSED="$(dpkg-query -W -f='${Package}\n' $UNUSED_PACKAGES 2>/dev/null || true)"
+if [ -n "$INSTALLED_UNUSED" ]; then
+	apt-get purge -y --auto-remove $INSTALLED_UNUSED
+fi
 EOF

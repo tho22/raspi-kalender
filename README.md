@@ -82,10 +82,8 @@ bei bereits angeschlossenem Kabel behebt das zuverlässig.
 
 - `pi-gen/` – **Git-Submodule** auf das originale
   https://github.com/RPi-Distro/pi-gen (kein Fork), gepinnt auf Tag
-  `2025-05-13-raspios-bookworm-armhf` (letzter von Raspberry Pi gepflegter
-  Bookworm-armhf-Stand; `master` zielt inzwischen auf Trixie). Der
-  Submodule-Checkout bleibt unverändert; Anpassungen daran liegen als Patch
-  separat vor.
+  `2026-10-06-raspios-trixie-armhf`. Der Submodule-Checkout bleibt
+  unverändert; Anpassungen daran liegen als Patch separat vor.
 - `patches/pi-gen-fixes.patch` – Korrekturen an pi-gen selbst: kaputter
   Standard-Apt-Mirror in `stage0`, zu knappe Image-Größen-Marge in
   `export-image` (reicht sonst nicht für das abschließende Chromium-Upgrade),
@@ -164,28 +162,31 @@ bei jedem Lauf frisch entsteht.
 ## Vor dem Build unbedingt anpassen
 
 **`FIRST_USER_PASS` in `config`** steht auf dem Platzhalter `changeme`. Da
-`DISABLE_FIRST_BOOT_USER_RENAME=1` gesetzt ist (damit pi-gens eigener
-interaktiver Umbenennungs-Dialog nicht mit der Imager-gesteuerten
-Umbenennung – siehe unten – kollidiert), muss hier ein echtes Passwort rein,
+`DISABLE_FIRST_BOOT_USER_RENAME=1` gesetzt ist (pi-gens eigener
+Build-Zeit-Umbenennungsmechanismus wird nicht gebraucht, da `kalender` schon
+beim Build als Nutzer angelegt wird), muss hier ein echtes Passwort rein,
 sonst ist das Gerät mit Standard-Zugangsdaten und aktiviertem SSH
 erreichbar.
 
-WLAN, SSH-Key und optional ein anderer Benutzername/Passwort werden bewusst
-**nicht** im Image gebacken, sondern beim Flashen über den Raspberry Pi
-Imager gesetzt (siehe [INSTALL.md](INSTALL.md)) – damit landen keine
-WLAN-Zugangsdaten im Image oder im Git-Repo.
+WLAN, SSH-Key und optional ein eigener Admin-Zugang werden bewusst **nicht**
+im Image gebacken, sondern beim Flashen über den Raspberry Pi Imager gesetzt
+(siehe [INSTALL.md](INSTALL.md)) – damit landen keine WLAN-Zugangsdaten im
+Image oder im Git-Repo.
 
-### Benutzername ändern
+### Eigenen Admin-Zugang einrichten
 
-Der Imager kann den Standardnutzer (`kalender`) beim Flashen umbenennen
-(`custom.toml`, verarbeitet von `userconf-pi`, das bereits installiert ist).
-Autologin löst dazu den tatsächlichen Nutzer über dessen UID (1000) zur
-Boot-Zeit dynamisch auf (`kalender-autologin-getty`), und die Sudoers-Regel
-für die Display-Erkennung ist ebenfalls per UID (`#1000`) statt per Name
-gebunden – beides bleibt also unabhängig vom gewählten Namen funktionsfähig.
-Nur die Home-Verzeichnis-Pfade sind beim Build auf `kalender` gemünzt; das ist
-unproblematisch, da `userconf-pi` das Home-Verzeichnis samt Inhalt bei der
-Umbenennung mitverschiebt.
+Raspberry Pi OS basiert seit Trixie für die Imager-„OS customisation"
+durchgängig auf [cloud-init](https://cloudinit.readthedocs.io/); das Image
+bringt cloud-init + `rpi-cloud-init-mods` standardmäßig mit. Trägt man im
+Imager Benutzername/Passwort/SSH-Key ein, legt cloud-init daraus beim ersten
+Boot einen **zusätzlichen** sudo-fähigen Account an – es ist **keine**
+Umbenennung des eingebauten `kalender`-Nutzers (anders als beim klassischen
+`custom.toml`/`userconf-pi`-Mechanismus älterer Raspberry-Pi-OS-Versionen).
+Der Kiosk-Autologin auf der Konsole bleibt davon unberührt: er löst den
+tatsächlichen Nutzer immer dynamisch über dessen UID (1000) auf
+(`kalender-autologin-getty`) und zeigt daher weiterhin den Kalender als
+`kalender` an. Der über den Imager angelegte Zugang dient nur für SSH-Login
+und Administration.
 
 ## Bekannte Einschränkungen
 

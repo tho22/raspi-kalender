@@ -17,6 +17,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   build:
@@ -60,6 +61,45 @@ jobs:
           key: pigen-work-${{ github.run_id }}
           restore-keys: |
             pigen-work-
+
+      # actions/cache's save step (see below) runs unprivileged and can only
+      # read root-owned files by first chowning them to the runner's own
+      # user -- which means they're saved into the cache tar owned by that
+      # user, not root. Its restore step is equally unprivileged, so it
+      # extracts them back AS that same user (unprivileged tar can't chown
+      # to an owner other than itself). Left alone, that silently turns
+      # almost the entire cached rootfs tree (stage0-stage2) into
+      # runner-uid-owned files instead of root-owned ones on every cache
+      # hit -- pi-gen's prerun.sh skip logic then reuses that rootfs as-is
+      # without rebuilding it, so the wrong ownership rides all the way
+      # into the final exported image (confirmed live: /etc, /usr, /home
+      # etc. on a built image all ended up owned by uid 1001, the
+      # ubuntu-latest runner's own uid, breaking login entirely). Restore
+      # real root ownership before the build touches this tree again.
+      - name: Fix work cache ownership after restore
+        run: |
+          mkdir -p pi-gen-work-cache
+          sudo chown -R 0:0 pi-gen-work-cache
+
+      # stage-kalender's own prerun.sh only copies a fresh base from stage2
+      # (copy_previous) when its own rootfs dir doesn't exist yet -- so once
+      # it exists in the persistent work cache, it's reused as-is forever,
+      # and our 00-run.sh scripts run again each time but on top of that
+      # same stale base rather than a fresh copy of the current (correctly
+      # cached) stage2. Actions that ADD something (installing a file,
+      # purging a package) still take effect every run since the scripts
+      # themselves always re-run; but reverting one (e.g. no longer purging
+      # a package) has no effect, since nothing re-adds what a previous
+      # run's script already removed from that same frozen base. Confirmed
+      # live: removing a package purge from stage-kalender's script had no
+      # effect on the next build because the package had already been
+      # purged from the cached stage-kalender rootfs in an earlier run, and
+      # that stage never got refreshed from stage2 to undo it. stage-kalender
+      # is actively developed (unlike stage0-2, which only change when
+      # pi-gen's own pinned tag changes) and cheap to rebuild, so always
+      # force a fresh copy from stage2 for it.
+      - name: Force a fresh stage-kalender base every build
+        run: sudo rm -rf pi-gen-work-cache/kalender/stage-kalender
 
       - name: Build image
         env:
@@ -111,6 +151,13 @@ jobs:
           mv "${img}.xz" "$renamed"
           echo "xz_path=pi-gen/deploy/${renamed}" >> "$GITHUB_OUTPUT"
 
+      # --target pins the new tag to the commit that was actually built,
+      # instead of gh release create's default of the repo's default branch
+      # HEAD -- without it, every release's underlying tag silently pointed
+      # at whatever master happened to be, so every release ended up with
+      # the exact same tag/commit creation date regardless of when it was
+      # actually built (confirmed live: every release reported the same
+      # created_at, from an unrelated master commit).
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -118,17 +165,49 @@ jobs:
           gh release create "${{ steps.tag.outputs.tag }}" \
             "${{ steps.compress.outputs.xz_path }}" \
             --title "Kalender-Pi image ${{ steps.tag.outputs.tag }}" \
-            --notes "Automated build via GitHub Actions (manual trigger). Decompress with: xz -d *.img.xz"
+            --notes "Automated build via GitHub Actions (manual trigger). Decompress with: xz -d *.img.xz" \
+            --target "${{ github.sha }}"
 
+      # Sort by publishedAt, not createdAt: createdAt reflects the
+      # underlying tag/commit's own creation time, which -- before the
+      # --target fix above -- was identical across every release, making
+      # this sort order arbitrary. Confirmed live: with every createdAt
+      # tied, sort_by's stable ordering combined with reverse ended up
+      # keeping the OLDEST releases and deleting the one just published.
+      # publishedAt is the release object's own timestamp and always
+      # reflects actual publish order regardless of commit history.
       - name: Delete old releases
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           keep="${{ github.event.inputs.keep_releases }}"
           keep="${keep:-3}"
-          gh release list --limit 100 --json tagName,createdAt \
-            --jq "sort_by(.createdAt) | reverse | .[${keep}:] | .[].tagName" \
+          gh release list --limit 100 --json tagName,publishedAt \
+            --jq "sort_by(.publishedAt) | reverse | .[${keep}:] | .[].tagName" \
             | while read -r old_tag; do
                 echo "Deleting old release: ${old_tag}"
                 gh release delete "${old_tag}" --yes --cleanup-tag
+              done
+
+      # actions/cache entries are immutable (a key can never be overwritten), so the
+      # unique-key-per-run + prefix-restore-keys pattern above necessarily creates a
+      # new ~3 GiB cache entry on every successful run; GitHub only cleans these up
+      # itself once the repo's 10 GiB cache quota is hit (LRU eviction), which is
+      # unpredictable and can evict a cache this workflow still wanted. Prune
+      # explicitly instead, mirroring "Delete old releases" above: keep the newest
+      # couple of entries (one isn't enough headroom -- a run in progress still
+      # needs last run's cache to restore from while this run's own save hasn't
+      # happened yet) and delete the rest. This step runs before this run's own
+      # cache is saved (actions/cache saves via an automatic post-job hook, after
+      # all regular steps including this one), so "keep 1" here plus the one this
+      # run is about to add still lands at 2 total once the job finishes.
+      - name: Delete old pi-gen work caches
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh cache list --key pigen-work- --limit 100 --json id,createdAt \
+            --jq "sort_by(.createdAt) | reverse | .[1:] | .[].id" \
+            | while read -r cache_id; do
+                echo "Deleting old cache: ${cache_id}"
+                gh cache delete "${cache_id}"
               done
