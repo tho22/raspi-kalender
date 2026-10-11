@@ -47,6 +47,20 @@ install -v -m 644 files/bash_profile "${ROOTFS_DIR}/home/${FIRST_USER_NAME}/.bas
 install -v -d "${ROOTFS_DIR}/home/${FIRST_USER_NAME}/.config"
 install -v -m 644 files/wayfire.ini "${ROOTFS_DIR}/home/${FIRST_USER_NAME}/.config/wayfire.ini"
 
+# Disable Chromium's "Translate this page?" popup: the kiosk always shows
+# the same German-language calendar page, so the prompt never serves a
+# purpose here, just an unwanted overlay on an otherwise hands-off display.
+# Uses Chromium's enterprise policy mechanism (TranslateEnabled) rather than
+# a --disable-features=Translate command-line flag, since policies are the
+# officially documented, version-stable way to control this -- the exact
+# feature-flag name has changed across Chromium releases in the past.
+install -v -d "${ROOTFS_DIR}/etc/chromium/policies/managed"
+cat > "${ROOTFS_DIR}/etc/chromium/policies/managed/kalender.json" <<'EOF'
+{
+  "TranslateEnabled": false
+}
+EOF
+
 cat > "${ROOTFS_DIR}/etc/kalender-kiosk-env" <<EOF
 export KIOSK_URL=${KIOSK_URL}
 EOF
