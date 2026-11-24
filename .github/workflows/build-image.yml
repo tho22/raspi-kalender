@@ -83,7 +83,7 @@ jobs:
       # correctly, and let actions/cache treat the resulting tar as an
       # opaque blob it never has to introspect.
       - name: Restore pi-gen work cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: pi-gen-work-cache.tar.zst
           key: pigen-work-${{ github.run_id }}
